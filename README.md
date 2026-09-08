@@ -16,28 +16,13 @@ pseudorandom function.
 Two things came out of building this that I did not expect, and both are the
 reason the repo is worth reading:
 
-1. **The naive receiver makes frequency hopping worse than not hopping**, at
+1. The naive receiver makes frequency hopping worse than not hopping, at
    every level of jamming I tested. Not marginally. At 10% of the band jammed
    the hopping link failed 58% of frames and a single fixed channel failed 8.7%
    of them.
-2. **A textbook blocking bound I wrote from memory was wrong**, and the
+2. A textbook blocking bound I wrote from memory was wrong, and the
    scheduler simulator caught it by disagreeing on a task that has no critical
    section at all.
-
-## Layout
-
-```
-hopset/phy.py        pulse shaping, AWGN, matched filter, Q function
-hopset/fec.py        rate 1/2 K=7 convolutional code, soft Viterbi, interleaver
-hopset/hop.py        hopset derivation, lockouts, jammer models
-hopset/timing.py     clock drift and serial search acquisition
-hopset/rt.py         fixed priority scheduling, response time analysis, PIP
-hopset/waveform.py   the whole chain, four receiver models
-hopset/experiments.py
-hopset/test_hopset.py
-```
-
-numpy only. `python -m hopset.test_hopset`, `python -m hopset.experiments <section>`.
 
 ## The baseband is calibrated, not just self consistent
 
@@ -108,7 +93,7 @@ error rate, 150 frames per point:
 | 20% | 0.167 | 0.960 | 1.000 |
 | 35% | 0.260 | 1.000 | 1.000 |
 
-A fixed channel beat the hopping link at **every** jammed fraction. That is the
+A fixed channel beat the hopping link at every jammed fraction. That is the
 opposite of the entire reason the waveform exists, so either the simulation was
 broken or I had missed something.
 
@@ -137,24 +122,24 @@ information, no training sequence, and no jam state detector:
 
 | band jammed | fixed channel | nominal | LLR clipped | per hop estimate | oracle erasure |
 | --- | --- | --- | --- | --- | --- |
-| 2% | 0.007 | 0.060 | 0.000 | **0.000** | 0.000 |
-| 5% | 0.027 | 0.260 | 0.013 | **0.000** | 0.000 |
-| 10% | 0.087 | 0.580 | 0.067 | **0.000** | 0.000 |
-| 20% | 0.167 | 0.960 | 0.407 | **0.000** | 0.020 |
-| 35% | 0.260 | 1.000 | 0.873 | **0.153** | 0.293 |
-| 50% | 0.453 | 1.000 | 1.000 | **0.720** | 0.833 |
+| 2% | 0.007 | 0.060 | 0.000 | 0.000 | 0.000 |
+| 5% | 0.027 | 0.260 | 0.013 | 0.000 | 0.000 |
+| 10% | 0.087 | 0.580 | 0.067 | 0.000 | 0.000 |
+| 20% | 0.167 | 0.960 | 0.407 | 0.000 | 0.020 |
+| 35% | 0.260 | 1.000 | 0.873 | 0.153 | 0.293 |
+| 50% | 0.453 | 1.000 | 1.000 | 0.720 | 0.833 |
 
 The blind estimator turns a waveform that lost to a fixed channel everywhere
 into one that wins everywhere up to half the band being jammed.
 
 The other thing in that table is worth pausing on. From 20% jamming upward the
-blind estimator beats the **oracle**, the receiver that is simply told which
+blind estimator beats the oracle, the receiver that is simply told which
 hops were jammed and erases them. Erasure throws a hop away completely. The
 estimator keeps it at correctly reduced confidence, and a jammed hop at -6 dB
 still carries a little information. Being told the answer is not the same as
 being told the right question, and hard erasure is the wrong question.
 
-Also measured: processing gain over the 58 MHz hopping band is **33.65 dB**,
+Also measured: processing gain over the 58 MHz hopping band is 33.65 dB,
 and a follower jammer has to react inside the 9.0 ms dwell to accomplish
 anything at all. A jammer needing 1 ms corrupts 88.9% of a dwell, one needing
 4.5 ms corrupts 50.1%, and one needing 10 ms corrupts nothing.
@@ -175,7 +160,7 @@ They disagreed in the other direction. On a five task radio set, the
 analytic bound of 10. A simulator beating a sound bound means the bound is
 wrong, and it was.
 
-My blocking term only counted **direct** blocking: a task is delayed by a
+My blocking term only counted direct blocking: a task is delayed by a
 shared resource only if it uses that resource itself. `keystream` has no
 critical section at all, so I gave it a blocking term of zero. But when the low
 priority built in test task holds the synthesiser control resource and the high
@@ -211,7 +196,7 @@ scheduling` also runs a standard worked example: three tasks at utilisation
 0.929, well above the Liu and Layland bound of 0.780, so the utilisation test
 rejects it. Response time analysis accepts it, giving 3, 6, and 20 ticks, with
 the lowest priority task landing exactly on its 20 tick deadline. The simulator
-reproduces all three response times **exactly**, zero pessimism, which is the
+reproduces all three response times exactly, zero pessimism, which is the
 expected result when every task is released together at a critical instant.
 
 ## Priority inversion
@@ -259,9 +244,9 @@ Worst relative error 2.4%. The p95 column is the operationally interesting one:
 at 5 seconds of clock uncertainty the average joiner is on the net in 7 seconds
 and one in twenty is still searching after 19.
 
-## Verification
+## How it is tested
 
-`python -m hopset.test_hopset`: **25 cases, 211 assertions, 0 failures, 10.5s.**
+`python -m hopset.test_hopset`: 25 cases, 211 assertions, 0 failures, 10.5s.
 
 Checked against something written by somebody else wherever possible: the Q
 function against tabulated values to 1e-5, the bit error rate against the
@@ -271,7 +256,22 @@ gain against the textbook soft over hard figure. The hopset lockout test uses a
 chi square statistic to confirm that excluding channels by redrawing keeps the
 distribution uniform, which a modulo remap would not.
 
-## What I left out
+## Modules
+
+```
+hopset/phy.py        pulse shaping, AWGN, matched filter, Q function
+hopset/fec.py        rate 1/2 K=7 convolutional code, soft Viterbi, interleaver
+hopset/hop.py        hopset derivation, lockouts, jammer models
+hopset/timing.py     clock drift and serial search acquisition
+hopset/rt.py         fixed priority scheduling, response time analysis, PIP
+hopset/waveform.py   the whole chain, four receiver models
+hopset/experiments.py
+hopset/test_hopset.py
+```
+
+numpy only. `python -m hopset.test_hopset`, `python -m hopset.experiments <section>`.
+
+## Known gaps
 
 - No carrier or timing recovery loop. Coherent detection is assumed, so this
   measures the waveform's own limits and not a synchroniser's.
